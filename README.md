@@ -464,3 +464,4 @@ Everything (dreams, milestones, social posts, subscription state) is stored
 in the browser's `localStorage`, seeded with sample data on first load. There's
 no server, so data won't sync across devices — that would be the natural next
 step if you want to grow this further (e.g. add a small backend + auth).
+
