@@ -27,9 +27,23 @@ export function isPushSupported() {
   return typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window;
 }
 
+// Registers (or reuses) the plain push-sw.js at its own scope, deliberately
+// separate from the installability service worker vite-plugin-pwa manages
+// at the root scope — this avoids the two ever conflicting or one
+// silently replacing the other.
+async function getPushRegistration() {
+  if (!isPushSupported()) return null;
+  const existing = await navigator.serviceWorker.getRegistration('/push-sw-scope/');
+  if (existing) return existing;
+  const reg = await navigator.serviceWorker.register('/push-sw.js', { scope: '/push-sw-scope/' });
+  await navigator.serviceWorker.ready.catch(() => {}); // best-effort — not required for correctness here
+  return reg;
+}
+
 export async function isPushSubscribed() {
   if (!isPushSupported()) return false;
-  const reg = await navigator.serviceWorker.ready;
+  const reg = await getPushRegistration();
+  if (!reg) return false;
   const sub = await reg.pushManager.getSubscription();
   return Boolean(sub);
 }
@@ -38,7 +52,7 @@ export async function subscribeToPush(preferredHourLocal, dreamProfile) {
   if (!isPushConfigured()) throw new Error('Push notifications are not configured for this deployment.');
   if (!isPushSupported()) throw new Error('Push notifications are not supported in this browser.');
 
-  const reg = await navigator.serviceWorker.ready;
+  const reg = await getPushRegistration();
   const sub = await reg.pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY),
@@ -64,7 +78,8 @@ export async function subscribeToPush(preferredHourLocal, dreamProfile) {
 // them to re-subscribe. Silently no-ops if not currently subscribed.
 export async function syncPushProfile(dreamProfile) {
   if (!isPushConfigured() || !isPushSupported()) return;
-  const reg = await navigator.serviceWorker.ready;
+  const reg = await getPushRegistration();
+  if (!reg) return;
   const sub = await reg.pushManager.getSubscription();
   if (!sub) return;
   try {
@@ -78,7 +93,8 @@ export async function syncPushProfile(dreamProfile) {
 
 export async function unsubscribeFromPush() {
   if (!isPushSupported()) return;
-  const reg = await navigator.serviceWorker.ready;
+  const reg = await getPushRegistration();
+  if (!reg) return;
   const sub = await reg.pushManager.getSubscription();
   if (!sub) return;
 
@@ -100,8 +116,8 @@ export async function unsubscribeFromPush() {
 // completing a milestone sends the paired buddy a real push notification.
 
 async function currentEndpoint() {
-  if (!isPushSupported()) return null;
-  const reg = await navigator.serviceWorker.ready;
+  const reg = await getPushRegistration();
+  if (!reg) return null;
   const sub = await reg.pushManager.getSubscription();
   return sub ? sub.endpoint : null;
 }

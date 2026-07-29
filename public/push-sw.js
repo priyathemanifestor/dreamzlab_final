@@ -1,15 +1,12 @@
-// Custom service worker source for vite-plugin-pwa's injectManifest
-// strategy. Handles two things beyond the default PWA install behavior:
-// real Web Push delivery, and focusing/opening the app when a notification
-// is tapped.
-
-import { precacheAndRoute } from 'workbox-precaching';
-
-// This actually consumes self.__WB_MANIFEST (rather than a bare, unused
-// reference to it), which is required — an unused reference gets removed
-// by Rollup's build step before the plugin can find it to inject into,
-// causing a build failure ("Unable to find a place to inject the manifest").
-precacheAndRoute(self.__WB_MANIFEST || []);
+// Plain, static service worker — deliberately NOT run through any bundler
+// or build-time code injection. Files in /public are copied byte-for-byte
+// by Vite, so nothing here can be silently altered or stripped by a build
+// tool, unlike the previous approach (vite-plugin-pwa's injectManifest).
+//
+// Registered at a separate scope from the installability service worker
+// vite-plugin-pwa generates (see src/push.js), so the two don't conflict —
+// this one exists purely to receive push events, not to control page
+// requests or do any caching.
 
 self.addEventListener('install', () => {
   self.skipWaiting();

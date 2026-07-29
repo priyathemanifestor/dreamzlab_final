@@ -7,12 +7,11 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      // injectManifest (rather than the default generateSW) lets us ship a
-      // custom service worker (src/sw.js) that handles real Web Push
-      // notifications, not just offline caching.
-      strategies: 'injectManifest',
-      srcDir: 'src',
-      filename: 'sw.js',
+      // Plain generateSW (the default, well-tested strategy) — handles
+      // installability (the manifest, "Add to Home Screen") only. Push
+      // notifications are handled by a completely separate, plain,
+      // unprocessed service worker at public/push-sw.js instead of trying
+      // to inject custom code into this one — see that file for why.
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
@@ -27,12 +26,6 @@ export default defineConfig({
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
         ],
-      },
-      injectManifest: {
-        // No files need to be precached for this app to work (everything
-        // renders fine online-first), so keep the precache list empty
-        // rather than pulling in extra build complexity.
-        globPatterns: [],
       },
     }),
   ],
