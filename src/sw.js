@@ -3,11 +3,13 @@
 // real Web Push delivery, and focusing/opening the app when a notification
 // is tapped.
 
-// Required placeholder for vite-plugin-pwa's injectManifest build step —
-// it replaces this with the actual precache manifest array at build time.
-// We don't use it for caching here (kept intentionally simple), but the
-// build step needs to find this reference.
-self.__WB_MANIFEST;
+import { precacheAndRoute } from 'workbox-precaching';
+
+// This actually consumes self.__WB_MANIFEST (rather than a bare, unused
+// reference to it), which is required — an unused reference gets removed
+// by Rollup's build step before the plugin can find it to inject into,
+// causing a build failure ("Unable to find a place to inject the manifest").
+precacheAndRoute(self.__WB_MANIFEST || []);
 
 self.addEventListener('install', () => {
   self.skipWaiting();
